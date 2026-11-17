@@ -1,0 +1,4 @@
+# Next.js and Playwright generate these files locally.
+/next-env.d.ts
+/playwright-report/
+/test-results/
