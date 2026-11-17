@@ -1,18 +1,24 @@
 import argparse
 import logging
+import sys
 from typing import Annotated
 
+import pymupdf
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from .config import Settings
+from .documents import DocumentService
 from .models import (
+    ContentResult,
     GraphProvider,
+    PageNumbers,
     PaperID,
     PaperList,
     PaperResult,
+    PassageResult,
     Provider,
     Query,
     RelatedResult,
@@ -26,14 +32,18 @@ from .service import ResearchService
 
 GraphProviders = Annotated[list[GraphProvider], Field(min_length=1, max_length=2)]
 SearchProviders = Annotated[list[Provider], Field(min_length=1, max_length=3)]
+StartPage = Annotated[int, Field(ge=1)]
+CharacterLimit = Annotated[int, Field(ge=1)]
+PassageCharacters = Annotated[int, Field(ge=80, le=2000)]
 READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 
 
 def create_server(settings: Settings) -> FastMCP:
     research = ResearchService(settings)
+    documents = DocumentService(settings, research)
     server = FastMCP(
         "Scientific Research",
-        instructions="Search scientific literature, resolve paper identifiers, and explore citations.",
+        instructions="Search scientific literature, resolve paper identifiers, and retrieve page-numbered evidence.",
     )
 
     @server.tool(annotations=READ_ONLY)
@@ -64,6 +74,16 @@ def create_server(settings: Settings) -> FastMCP:
         return await research.get(paper_id)
 
     @server.tool(annotations=READ_ONLY)
+    async def get_paper_content(
+        paper_id: PaperID,
+        pages: PageNumbers | None = None,
+        start_page: StartPage = 1,
+        max_chars: CharacterLimit | None = None,
+    ) -> ContentResult:
+        """Return PDF Markdown with one-based page numbers. Explicit pages override start_page."""
+        return await documents.content(paper_id, pages, start_page, max_chars)
+
+    @server.tool(annotations=READ_ONLY)
     async def get_citations(
         paper_id: PaperID,
         providers: GraphProviders | None = None,
@@ -92,6 +112,20 @@ def create_server(settings: Settings) -> FastMCP:
         """Return Semantic Scholar recommendations and citation neighbors with their relationship labels."""
         return await research.related(paper_id, limit)
 
+    @server.tool(annotations=READ_ONLY)
+    async def search_paper_content(
+        paper_id: PaperID,
+        query: Query,
+        pages: PageNumbers | None = None,
+        start_page: StartPage = 1,
+        limit: Annotated[int, Field(ge=1, le=30)] = 5,
+        passage_chars: PassageCharacters = 600,
+    ) -> PassageResult:
+        """Rank keyword passages in a PDF and return page numbers, identifiers, and the source URL."""
+        return await documents.search(
+            paper_id, query, pages, start_page, limit, passage_chars
+        )
+
     return server
 
 
@@ -109,6 +143,8 @@ def main() -> None:
     logging.basicConfig(
         level=settings.log_level, format="%(levelname)s %(name)s %(message)s"
     )
+    pymupdf.set_messages(stream=sys.stderr)
+    pymupdf.set_log(stream=sys.stderr)
     # These SDKs can include upstream request data in DEBUG logs.
     for name in ("arxiv", "pyalex", "semanticscholar", "httpx", "httpcore"):
         logging.getLogger(name).setLevel(logging.WARNING)
