@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "fact_checker": "fact_checker.agent:graph"
+  },
+  "env": ".env"
+}
