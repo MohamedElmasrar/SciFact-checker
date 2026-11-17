@@ -1,0 +1,39 @@
+[project]
+name = "scientific-research-mcp"
+version = "0.1.0"
+description = "Search and read scientific literature over MCP."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "arxiv>=2.4,<2.5",
+    "cachetools>=6,<8",
+    "fastmcp>=3,<4",
+    "httpx>=0.28,<1",
+    "mcp>=1.20,<2",
+    "pyalex>=0.21,<0.22",
+    "pydantic>=2.11,<3",
+    "pydantic-settings>=2.9,<3",
+    "pymupdf>=1.26,<2",
+    "pymupdf4llm>=0.2,<2",
+    "requests>=2.32,<3",
+    "semanticscholar>=0.12,<0.13",
+    "tenacity>=9,<10",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2"]
+
+[project.scripts]
+research-mcp = "research_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/research_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
