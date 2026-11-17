@@ -80,6 +80,8 @@ uv run scifact-evaluate --split test --from-dev benchmarks/dev.json --output ben
 
 Each command writes a JSON record with the configuration and a Markdown score table. All runs compare dense, sparse, hybrid, and hybrid with cross-encoder reranking using Recall@5, Recall@10, MRR@10, and nDCG@10. Hybrid and reranked hybrid share the same RRF candidate pool. Test scores reflect the frozen development selection. The benchmark always scores the four variants at their standard cutoffs, independently of the serving strategy and `top_k`.
 
+The measured [development results](benchmarks/dev.md) and [held-out test results](benchmarks/test.md) include all four strategies. The corresponding [development JSON](benchmarks/dev.json) and [test JSON](benchmarks/test.json) record the settings, revisions, and full-precision scores.
+
 ## Tests
 
 ```bash

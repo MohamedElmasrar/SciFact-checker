@@ -1,0 +1,88 @@
+{
+  "split": "dev",
+  "source_split": "train",
+  "claims": 809,
+  "indexed_documents": 5183,
+  "qdrant_version": "1.16.3",
+  "configuration": {
+    "index": {
+      "schema_version": 1,
+      "corpus": "BeIR/scifact",
+      "corpus_revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+      "dense_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "dense_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "sparse_model": "Qdrant/bm25"
+    },
+    "qrels": {
+      "repo": "BeIR/scifact-qrels",
+      "revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029"
+    },
+    "search": {
+      "hybrid_depth": 50,
+      "dense_min_score": null,
+      "sparse_min_score": null,
+      "hybrid_min_score": null,
+      "exact_dense_search": true
+    },
+    "reranker": {
+      "model": "cross-encoder/ms-marco-TinyBERT-L2-v2",
+      "revision": "81d1926f67cb8eee2c2be17ca9f793c7c3bd20cc",
+      "max_length": 256,
+      "batch_size": 16,
+      "device": "cpu"
+    },
+    "dense_device": "cpu",
+    "embedding_batch_size": 32,
+    "torch_threads": 4,
+    "packages": {
+      "scifact-retriever": "0.1.0",
+      "datasets": "4.8.5",
+      "fastembed": "0.7.4",
+      "langchain-qdrant": "1.1.0",
+      "qdrant-client": "1.16.2",
+      "sentence-transformers": "5.7.0",
+      "torch": "2.10.0+cpu"
+    }
+  },
+  "selected_rerank_candidates": 10,
+  "metrics": {
+    "dense": {
+      "Recall@5": 0.734734239802225,
+      "Recall@10": 0.7855583024309848,
+      "MRR@10": 0.6261301430337277,
+      "nDCG@10": 0.6602002541701137
+    },
+    "sparse": {
+      "Recall@5": 0.7457560774618871,
+      "Recall@10": 0.8100329625051504,
+      "MRR@10": 0.6704455824356936,
+      "nDCG@10": 0.6992441126631558
+    },
+    "hybrid": {
+      "Recall@5": 0.7942727647301195,
+      "Recall@10": 0.8438607334157396,
+      "MRR@10": 0.6988154099711578,
+      "nDCG@10": 0.7284692451973007
+    },
+    "hybrid_reranked": {
+      "Recall@5": 0.7744334569427277,
+      "Recall@10": 0.8438607334157396,
+      "MRR@10": 0.6648247885886946,
+      "nDCG@10": 0.7030596107045738
+    }
+  },
+  "rerank_depth_metrics": {
+    "10": {
+      "Recall@5": 0.7744334569427277,
+      "Recall@10": 0.8438607334157396,
+      "MRR@10": 0.6648247885886946,
+      "nDCG@10": 0.7030596107045738
+    },
+    "16": {
+      "Recall@5": 0.7632674083230325,
+      "Recall@10": 0.8339719818706222,
+      "MRR@10": 0.6562579708438794,
+      "nDCG@10": 0.6938503884576872
+    }
+  }
+}
