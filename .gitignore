@@ -1,0 +1,42 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# Python environments, caches, and distributions
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+
+# Node dependencies and build output
+node_modules/
+.next/
+dist-ssr/
+*.tsbuildinfo
+coverage/
+
+# Local services, editor files, and logs
+.langgraph_api/
+.cache/
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
