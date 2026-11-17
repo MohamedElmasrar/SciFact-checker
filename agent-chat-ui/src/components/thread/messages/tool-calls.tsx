@@ -1,5 +1,6 @@
 import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
 import { useState } from "react";
+import { ScientificResult } from "./scientific-results";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -66,8 +67,6 @@ export function ToolCalls({
 }
 
 export function ToolResult({ message }: { message: ToolMessage }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   let parsedContent: any;
   let isJsonContent = false;
 
@@ -81,6 +80,31 @@ export function ToolResult({ message }: { message: ToolMessage }) {
     parsedContent = message.content;
   }
 
+  return (
+    <ScientificResult
+      name={message.name}
+      payload={parsedContent}
+      fallback={
+        <GenericToolResult
+          message={message}
+          parsedContent={parsedContent}
+          isJsonContent={isJsonContent}
+        />
+      }
+    />
+  );
+}
+
+function GenericToolResult({
+  message,
+  parsedContent,
+  isJsonContent,
+}: {
+  message: ToolMessage;
+  parsedContent: any;
+  isJsonContent: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const contentStr = isJsonContent
     ? JSON.stringify(parsedContent, null, 2)
     : String(message.content);
