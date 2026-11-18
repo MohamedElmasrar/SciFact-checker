@@ -30,4 +30,4 @@ uv run --locked ruff check src tests evals
 
 The agent tests use deterministic models and tools. The retriever and research tests exercise the same Python distribution, using temporary indexes and provider fixtures.
 
-See the [verification evaluation](evals/README.md) for fixture results and the opt-in live Gemini command.
+See the [verification evaluation guide](evals/README.md) for benchmark commands and scoring rules.

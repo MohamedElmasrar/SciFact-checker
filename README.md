@@ -5,12 +5,13 @@ A research chatbot that searches scientific literature and verifies claims again
 | Component | Role |
 | --- | --- |
 | [Agent Chat UI](agent-chat-ui/README.md) | Fork of LangChain's chat frontend with streamed research progress, paper references, and fact-check reports |
-| [Fact Checker Agent](fact-checker-agent/README.md) | Gemini conversational agent and claim-verification graph |
-| Research MCP | Scientific paper search, citation exploration, and PDF passages |
-| SciFact retriever | Dense and BM25 retrieval over the indexed BEIR SciFact corpus |
+| [Fact Checker Agent](fact-checker-agent/README.md) | Gemini agent and LangGraph claim-verification workflow |
+| [Research MCP](fact-checker-agent/src/research_mcp) | Paper search, citation exploration, and PDF passages from OpenAlex, arXiv, and Semantic Scholar |
+| [SciFact retriever](fact-checker-agent/src/scifact_retriever) | Dense and BM25 search over the BEIR SciFact corpus, stored in embedded Qdrant |
 
-The agent, research server module, and retriever are installed together from
-`fact-checker-agent`.
+The three Python modules share one package and lockfile in `fact-checker-agent`.
+LangGraph starts the research server on demand over stdio through the LangChain
+MCP adapter. The agent opens the file-backed Qdrant index in its own process.
 
 ## Run locally
 
@@ -43,9 +44,6 @@ uv run --locked langgraph dev
 ```
 
 LangGraph serves the `fact_checker` assistant at `http://localhost:2024`.
-The LangChain MCP adapter launches the packaged research module over stdio
-when the agent needs it. SciFact retrieval opens the local Qdrant index in
-the agent process.
 
 To use the chat UI, run these commands from the repository root in another
 terminal. The UI requires Node.js 20.19 or later and pnpm.
@@ -57,8 +55,14 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open [the local chat](http://localhost:3000) and try “Find three papers about
-the transformer attention mechanism.”
+Open the chat and try one of these prompts. [Local chat](http://localhost:3000)
+
+- **Paper search** — Find three papers about the Transformer attention mechanism.
+- **Local SciFact retrieval** — Use `retrieve_scifact` to find evidence for the
+  claim that aspirin inhibits platelet aggregation. Quote a relevant passage and
+  cite its source.
+- **Fact-check** — Verify whether the original Transformer used recurrence or
+  convolution. Cite the passages that support the verdict.
 
 ## Checks
 
