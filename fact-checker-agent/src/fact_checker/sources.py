@@ -13,7 +13,17 @@ from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from .config import Settings
-from .evidence import EvidenceBatch, from_research, from_scifact
+from .evidence import (
+    Evidence,
+    EvidenceBatch,
+    PaperReference,
+    Provenance,
+    excerpt,
+    from_research,
+    from_scifact,
+    research_reference,
+    safe_url,
+)
 
 log = logging.getLogger(__name__)
 
@@ -63,10 +73,12 @@ class SciFactSource:
                 return task.result()
         except TimeoutError:
             log.warning("retrieval_timeout source=scifact")
-            return EvidenceBatch(notices=["SciFact retrieval timed out."])
+            return EvidenceBatch(status="timeout", notices=["SciFact retrieval timed out."])
         except Exception as exc:
             log.warning("retrieval_failed source=scifact error_type=%s", type(exc).__name__)
-            return EvidenceBatch(notices=["SciFact retrieval is unavailable."])
+            return EvidenceBatch(
+                status="unavailable", notices=["SciFact retrieval is unavailable."]
+            )
         finally:
             if task is not None:
 
@@ -113,6 +125,13 @@ def structured_payload(message: ToolMessage) -> dict[str, Any] | None:
     return None
 
 
+def paper_lookup_id(paper: PaperReference) -> str | None:
+    for key in ("doi", "arxiv", "openalex", "semanticscholar", "corpus_id"):
+        if identifier := paper.identifiers.get(key):
+            return f"CorpusId:{identifier}" if key == "corpus_id" else identifier
+    return None
+
+
 class ResearchSource:
     def __init__(self, client: MultiServerMCPClient, discovery_timeout: float, timeout: float):
         self.client = client
@@ -141,38 +160,78 @@ class ResearchSource:
         return self._tools
 
     async def search(self, query: str) -> EvidenceBatch:
-        search = (await self.tools()).get("search_papers")
-        if search is None:
-            return EvidenceBatch(notices=["Research MCP search is unavailable."])
         try:
-            message = await asyncio.wait_for(
-                search.ainvoke(
-                    {
-                        "type": "tool_call",
-                        "name": search.name,
-                        "id": uuid4().hex,
-                        "args": {"query": query[:500], "limit": 5},
-                    }
-                ),
-                self.timeout,
-            )
-            if message.status == "error" or (payload := structured_payload(message)) is None:
-                raise ValueError("Research search returned no structured results")
+            payload = await self._call("search_papers", {"query": query[:500], "limit": 5})
+            issues = payload.get("issues", [])
             notices = [
-                f"Research provider {issue['source']} reported {issue['code']}."
-                for issue in payload.get("issues", [])
+                f"Research provider {issue['source']} reported {issue['code']}." for issue in issues
             ]
+            if {"openalex", "arxiv", "semanticscholar"} <= {issue["source"] for issue in issues}:
+                return EvidenceBatch(status="unavailable", notices=notices)
+            papers = [research_reference(paper) for paper in payload["papers"]]
             evidence = [
                 entry
-                for rank, paper in enumerate(payload["papers"], 1)
-                if (entry := from_research(paper, rank)) is not None
+                for rank, (paper, reference) in enumerate(
+                    zip(payload["papers"], papers, strict=True), 1
+                )
+                if (entry := from_research(paper, rank, reference=reference)) is not None
             ]
             if payload["papers"] and not evidence:
                 notices.append("The research search returned papers without usable abstracts.")
-            return EvidenceBatch(evidence=evidence, notices=notices)
+            return EvidenceBatch(evidence=evidence, notices=notices, papers=papers)
         except TimeoutError:
             log.warning("retrieval_timeout source=research_mcp")
-            return EvidenceBatch(notices=["Research MCP search timed out."])
+            return EvidenceBatch(status="timeout", notices=["Research MCP search timed out."])
         except Exception as exc:
             log.warning("retrieval_failed source=research_mcp error_type=%s", type(exc).__name__)
-            return EvidenceBatch(notices=["Research MCP search is unavailable."])
+            return EvidenceBatch(
+                status="unavailable", notices=["Research MCP search is unavailable."]
+            )
+
+    async def search_pdf(self, paper: PaperReference, query: str) -> EvidenceBatch:
+        paper_id = paper_lookup_id(paper)
+        if paper_id is None:
+            return EvidenceBatch()
+        try:
+            payload = await self._call(
+                "search_paper_content", {"paper_id": paper_id, "query": query[:500], "limit": 2}
+            )
+            issues = payload.get("issues", [])
+            notices = [f"PDF retrieval reported {issue['code']}." for issue in issues]
+            url = safe_url((payload.get("source") or {}).get("pdf_url"))
+            if not url:
+                codes = {issue["code"] for issue in issues}
+                if "pdf_timeout" in codes:
+                    return EvidenceBatch(status="timeout", notices=notices)
+                if codes <= {"pdf_unavailable", "not_found"}:
+                    return EvidenceBatch(notices=notices or ["No accessible PDF was found."])
+                return EvidenceBatch(status="unavailable", notices=notices)
+            evidence = [
+                Evidence(
+                    paper=paper,
+                    passage=excerpt(passage["text"]),
+                    page=passage["page"],
+                    pdf_url=url,
+                    provenance=[Provenance(source="research_mcp", rank=rank)],
+                )
+                for rank, passage in enumerate(payload["passages"], 1)
+                if passage["text"].strip()
+            ]
+            return EvidenceBatch(evidence=evidence, notices=notices)
+        except TimeoutError:
+            return EvidenceBatch(status="timeout", notices=["PDF retrieval timed out."])
+        except Exception as exc:
+            log.warning("pdf_retrieval_failed error_type=%s", type(exc).__name__)
+            return EvidenceBatch(status="unavailable", notices=["PDF retrieval is unavailable."])
+
+    async def _call(self, name: str, args: dict) -> dict[str, Any]:
+        selected = (await self.tools()).get(name)
+        if selected is None:
+            raise ValueError(f"Research tool {name} is unavailable")
+        message = await asyncio.wait_for(
+            selected.ainvoke({"type": "tool_call", "name": name, "id": uuid4().hex, "args": args}),
+            self.timeout,
+        )
+        if message.status == "error" or (payload := structured_payload(message)) is None:
+            raise ValueError(f"Research tool {name} returned no structured results")
+        return payload

@@ -103,10 +103,12 @@ export function AssistantMessage({
   message,
   isLoading,
   handleRegenerate,
+  onRetryClaim,
 }: {
   message: Message | undefined;
   isLoading: boolean;
   handleRegenerate: (parentCheckpoint: Checkpoint | null | undefined) => void;
+  onRetryClaim?: (claim: string) => void;
 }) {
   const content = message?.content ?? [];
   const contentString = getContentString(content);
@@ -151,7 +153,10 @@ export function AssistantMessage({
       <div className="flex w-full flex-col gap-2">
         {isToolResult ? (
           <>
-            <ToolResult message={message} />
+            <ToolResult
+              message={message}
+              onRetryClaim={onRetryClaim}
+            />
             <Interrupt
               interrupt={threadInterrupt}
               isLastMessage={isLastMessage}
