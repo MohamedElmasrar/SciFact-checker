@@ -16,16 +16,18 @@ Follow the [repository setup guide](../README.md#run-locally) to start Qdrant, t
 
 ## How verification works
 
-The graph handles up to four claims per request and uses both SciFact abstract passages and research MCP search results. It merges duplicate passages, retains contributing sources, and ranks candidates using their within-source positions. Gemini assesses the ranked passages and assigns one of three verdicts per claim. The graph checks citation IDs against actual retrieved passages and requires directionally relevant cited evidence for a supported or contradicted verdict. The interface shows the linked references, evidence passages and their role in the verdict.
+The graph handles up to four claims per request. It retrieves SciFact passages and research MCP abstracts in parallel for each claim. When full text could resolve a material uncertainty, it asks the existing MCP passage tool for up to two passages from one paper. Supported and contradicted verdicts require a direct quote that matches the cited passage. The UI links PDF citations to the retrieved page.
 
-When a source is unavailable, the report includes a notice and can continue with the remaining evidence. Literature verification uses abstracts and scope-limited retrieval. The chat agent can invoke the MCP PDF and citation tools for deeper research.
+When one source fails, the verifier can use the remaining evidence and show a notice. Claims that time out or cannot be assessed have no verdict and can be retried independently. `FACT_CHECK_TIMEOUT_SECONDS` sets the deadline for claim extraction, retrieval, and verification. The default is 90 seconds.
 
 ## Tests
 
 ```bash
 cd fact-checker-agent
 uv run --locked pytest
-uv run --locked ruff check src tests
+uv run --locked ruff check src tests evals
 ```
 
 Unit and graph integration tests use deterministic model and tool doubles. They run without a Gemini key, Qdrant, or network access.
+
+See the [verification evaluation](evals/README.md) for fixture results and the opt-in live Gemini command.
