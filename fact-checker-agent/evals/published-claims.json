@@ -1,0 +1,286 @@
+{
+  "papers": {
+    "transformer": {
+      "title": "Attention Is All You Need",
+      "identifiers": {
+        "arxiv": "1706.03762",
+        "doi": "10.48550/arxiv.1706.03762"
+      },
+      "pdf_url": "https://arxiv.org/pdf/1706.03762v7"
+    },
+    "resnet": {
+      "title": "Deep Residual Learning for Image Recognition",
+      "identifiers": {
+        "arxiv": "1512.03385",
+        "doi": "10.1109/cvpr.2016.90"
+      },
+      "pdf_url": "https://arxiv.org/pdf/1512.03385v1"
+    },
+    "lora": {
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "identifiers": {
+        "arxiv": "2106.09685",
+        "doi": "10.48550/arxiv.2106.09685"
+      },
+      "pdf_url": "https://arxiv.org/pdf/2106.09685v2"
+    },
+    "calibration": {
+      "title": "On Calibration of Modern Neural Networks",
+      "identifiers": {
+        "arxiv": "1706.04599",
+        "doi": "10.48550/arxiv.1706.04599"
+      },
+      "pdf_url": "https://proceedings.mlr.press/v70/guo17a/guo17a.pdf"
+    },
+    "ligo": {
+      "title": "Observation of Gravitational Waves from a Binary Black Hole Merger",
+      "identifiers": {
+        "arxiv": "1602.03837",
+        "doi": "10.1103/physrevlett.116.061102"
+      },
+      "pdf_url": "https://arxiv.org/pdf/1602.03837v1"
+    }
+  },
+  "cases": [
+    {
+      "id": "transformer-01",
+      "split": "dev",
+      "paper": "transformer",
+      "claim": "In Attention Is All You Need, the base Transformer used eight attention heads.",
+      "expected": "supported",
+      "page": 5,
+      "location": "§3.2.2",
+      "excerpt": "h = 8 parallel attention layers",
+      "rationale": "The architecture description gives eight heads. Later Transformer variants use other head counts.",
+      "passage": "In this work we employ h = 8 parallel attention layers, or heads."
+    },
+    {
+      "id": "transformer-02",
+      "split": "dev",
+      "paper": "transformer",
+      "claim": "In the WMT 2014 English-to-German experiment in Attention Is All You Need, Transformer Big scored below 28 BLEU.",
+      "expected": "contradicted",
+      "page": 8,
+      "location": "§6.1",
+      "excerpt": "BLEU score of 28.4",
+      "rationale": "The paper reports 28.4 for the big model on English-to-German. The base model and English-to-French results answer different questions.",
+      "passage": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table 2) outperforms the best previously reported models (including ensembles) by more than 2.0 BLEU, establishing a new state-of-the-art BLEU score of 28.4."
+    },
+    {
+      "id": "transformer-03",
+      "split": "dev",
+      "paper": "transformer",
+      "claim": "The position-encoding comparison in Attention Is All You Need found a large gap in translation results between learned and sinusoidal positions.",
+      "expected": "contradicted",
+      "page": 6,
+      "location": "§3.5",
+      "excerpt": "nearly identical results",
+      "rationale": "The comparison gives similar results. Its stated motivation for choosing sinusoids is separate from measured translation quality.",
+      "passage": "We also experimented with using learned positional embeddings [9] instead, and found that the two versions produced nearly identical results (see Table 3 row (E))."
+    },
+    {
+      "id": "transformer-04",
+      "split": "dev",
+      "paper": "transformer",
+      "claim": "The position-encoding experiments in Attention Is All You Need established that sinusoidal positions outperform learned positions on translations longer than all training examples.",
+      "expected": "insufficient_evidence",
+      "page": 6,
+      "location": "§3.5",
+      "excerpt": "may allow the model to extrapolate",
+      "rationale": "The authors describe longer-sequence extrapolation as a possibility. Their reported positional comparison is insufficient to establish a measured advantage on this length slice.",
+      "passage": "We also experimented with using learned positional embeddings [9] instead, and found that the two versions produced nearly identical results (see Table 3 row (E)). We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."
+    },
+    {
+      "id": "resnet-01",
+      "split": "dev",
+      "paper": "resnet",
+      "claim": "In Deep Residual Learning for Image Recognition, a single 152-layer model had 4.49% ImageNet top-5 validation error.",
+      "expected": "supported",
+      "page": 7,
+      "location": "§4.1",
+      "excerpt": "top-5 validation error of 4.49%",
+      "rationale": "The number is for one model on the validation split. The lower ensemble test error has a different configuration and split.",
+      "passage": "Our 152-layer ResNet has a single-model top-5 validation error of 4.49%."
+    },
+    {
+      "id": "resnet-02",
+      "split": "dev",
+      "paper": "resnet",
+      "claim": "Deep Residual Learning for Image Recognition reports that its 3.57% ImageNet test error came from a single 152-layer model.",
+      "expected": "contradicted",
+      "page": 7,
+      "location": "§4.1",
+      "excerpt": "combine six models",
+      "rationale": "The 3.57% test result came from a six-model ensemble. The nearby 152-layer single-model result is measured on validation data.",
+      "passage": "We combine six models of different depth to form an ensemble (only with two 152-layer ones at the time of submitting). This leads to 3.57% top-5 error on the test set (Table 5)."
+    },
+    {
+      "id": "resnet-03",
+      "split": "dev",
+      "paper": "resnet",
+      "claim": "On CIFAR-10 in Deep Residual Learning for Image Recognition, the 1202-layer model tested better than the 110-layer model.",
+      "expected": "contradicted",
+      "page": 8,
+      "location": "§4.2",
+      "excerpt": "worse than that of our 110-layer network",
+      "rationale": "The deeper model tested worse despite similar training error. The distinction is between optimization and generalization.",
+      "passage": "The testing result of this 1202-layer network is worse than that of our 110-layer network"
+    },
+    {
+      "id": "resnet-04",
+      "split": "dev",
+      "paper": "resnet",
+      "claim": "Deep Residual Learning for Image Recognition established that adding dropout fixes the 1202-layer CIFAR-10 model's generalization gap.",
+      "expected": "insufficient_evidence",
+      "page": 8,
+      "location": "§4.2",
+      "excerpt": "we use no maxout/dropout",
+      "rationale": "The authors discuss stronger regularization as future work. They provide no paired dropout experiment for this model.",
+      "passage": "In this paper, we use no maxout/dropout and just simply impose regularization via deep and thin architectures by design, without distracting from the focus on the difficulties of optimization. But combining with stronger regularization may improve results, which we will study in the future."
+    },
+    {
+      "id": "lora-01",
+      "split": "dev",
+      "paper": "lora",
+      "claim": "The original LoRA method for language-model adaptation freezes the pretrained weights during adaptation.",
+      "expected": "supported",
+      "page": 1,
+      "location": "Abstract",
+      "excerpt": "freezes the pretrained model weights",
+      "rationale": "The base weights remain fixed during adaptation. The trainable low-rank matrices and merging at deployment are separate concepts.",
+      "passage": "We propose Low-Rank Adaptation, or LoRA, which freezes the pretrained model weights and injects trainable rank decomposition matrices"
+    },
+    {
+      "id": "lora-02",
+      "split": "dev",
+      "paper": "lora",
+      "claim": "In the original LoRA paper's rank-four GPT-3 example, the checkpoint size was about 35 MB.",
+      "expected": "supported",
+      "page": 5,
+      "location": "§4.2",
+      "excerpt": "from 350GB to 35MB",
+      "rationale": "This is checkpoint storage for query and value adaptation. It is distinct from training VRAM.",
+      "passage": "With r = 4 and only the query and value projection matrices being adapted, the checkpoint size is reduced by roughly 10,000× (from 350GB to 35MB)"
+    },
+    {
+      "id": "lora-03",
+      "split": "dev",
+      "paper": "lora",
+      "claim": "The original LoRA paper reports that GPT-3 175B training took 35 MB of GPU memory with LoRA.",
+      "expected": "contradicted",
+      "page": 5,
+      "location": "§4.2",
+      "excerpt": "VRAM consumption during training from 1.2TB to 350GB",
+      "rationale": "The training VRAM figure is 350 GB. The 35 MB figure describes storage for a low-rank checkpoint.",
+      "passage": "On GPT-3 175B, we reduce the VRAM consumption during training from 1.2TB to 350GB. With r = 4 and only the query and value projection matrices being adapted, the checkpoint size is reduced by roughly 10,000× (from 350GB to 35MB)"
+    },
+    {
+      "id": "lora-04",
+      "split": "dev",
+      "paper": "lora",
+      "claim": "In the original LoRA paper, the reported rank-one GPT-3 result establishes that rank one also maximizes BLEU for GPT-2 Medium on E2E NLG.",
+      "expected": "contradicted",
+      "page": 26,
+      "location": "Table 18",
+      "excerpt": "r = 4 for BLEU",
+      "rationale": "The appendix reports a rank-four BLEU peak for GPT-2 Medium. A GPT-3 result on different tasks cannot transfer to that metric.",
+      "passage": "Table 18: Validation loss and test set metrics on E2E NLG Challenge achieved by LoRA with different rank r using GPT-2 Medium. Unlike on GPT-3 where r = 1 suffices for many tasks, here the performance peaks at r = 16 for validation loss and r = 4 for BLEU"
+    },
+    {
+      "id": "calibration-01",
+      "split": "holdout",
+      "paper": "calibration",
+      "claim": "In On Calibration of Modern Neural Networks, temperature scaling uses one shared positive scale parameter for the classes.",
+      "expected": "supported",
+      "page": 6,
+      "location": "§4.2",
+      "excerpt": "uses a single scalar parameter",
+      "rationale": "Temperature scaling applies a shared positive scalar. Vector and matrix scaling introduce additional fitted parameters.",
+      "passage": "Temperature scaling, the simplest extension of Platt scaling, uses a single scalar parameter T > 0 for all classes."
+    },
+    {
+      "id": "calibration-02",
+      "split": "holdout",
+      "paper": "calibration",
+      "claim": "Temperature scaling as defined in On Calibration of Modern Neural Networks raises top-1 accuracy.",
+      "expected": "contradicted",
+      "page": 6,
+      "location": "§4.2",
+      "excerpt": "does not affect the model’s accuracy",
+      "rationale": "Positive temperature preserves the ordering of logits. The method changes probabilities while leaving the winning class and accuracy unchanged.",
+      "passage": "In other words, temperature scaling does not affect the model’s accuracy."
+    },
+    {
+      "id": "calibration-03",
+      "split": "holdout",
+      "paper": "calibration",
+      "claim": "In On Calibration of Modern Neural Networks, temperature scaling improved calibration on every reported dataset, including Reuters.",
+      "expected": "contradicted",
+      "page": 7,
+      "location": "§5",
+      "excerpt": "is the Reuters dataset",
+      "rationale": "Reuters is the reported exception. Broad aggregate effectiveness does not establish improvement on each dataset.",
+      "passage": "The only dataset that temperature scaling does not calibrate is the Reuters dataset."
+    },
+    {
+      "id": "calibration-04",
+      "split": "holdout",
+      "paper": "calibration",
+      "claim": "On Calibration of Modern Neural Networks established that the same fitted temperature remains reliable after a shift from its validation population to a new real-world sensor.",
+      "expected": "insufficient_evidence",
+      "page": 6,
+      "location": "§4.2",
+      "excerpt": "uses a single scalar parameter",
+      "rationale": "The fit uses a validation set. The paper's calibration experiments do not establish transfer to the specified sensor shift.",
+      "passage": "Temperature scaling, the simplest extension of Platt scaling, uses a single scalar parameter T > 0 for all classes."
+    },
+    {
+      "id": "ligo-01",
+      "split": "holdout",
+      "paper": "ligo",
+      "claim": "The original GW150914 report estimated a matched-filter signal-to-noise ratio of 24.",
+      "expected": "supported",
+      "page": 1,
+      "location": "Abstract",
+      "excerpt": "ratio of 24",
+      "rationale": "The number describes matched-filter signal-to-noise. The separately reported statistical significance uses sigma units.",
+      "passage": "The signal was observed with a matched-filter signal-to-noise ratio of 24"
+    },
+    {
+      "id": "ligo-02",
+      "split": "holdout",
+      "paper": "ligo",
+      "claim": "The original GW150914 report says the gravitational-wave frequency fell from 250 Hz to 35 Hz.",
+      "expected": "contradicted",
+      "page": 1,
+      "location": "Abstract",
+      "excerpt": "frequency from 35 to 250 Hz",
+      "rationale": "The observed chirp moves upward in frequency. The claim reverses the direction.",
+      "passage": "The signal sweeps upwards in frequency from 35 to 250 Hz"
+    },
+    {
+      "id": "ligo-03",
+      "split": "holdout",
+      "paper": "ligo",
+      "claim": "The first observation paper reports that only LIGO Hanford detected GW150914.",
+      "expected": "contradicted",
+      "page": 2,
+      "location": "§II",
+      "excerpt": "Hanford, WA, and Livingston, LA",
+      "rationale": "The observation section names both Hanford and Livingston as detectors of the event.",
+      "passage": "On September 14, 2015 at 09:50:45 UTC, the LIGO Hanford, WA, and Livingston, LA, observatories detected the coincident signal GW150914 shown in Fig. 1."
+    },
+    {
+      "id": "ligo-04",
+      "split": "holdout",
+      "paper": "ligo",
+      "claim": "The discovery observation of GW150914 established whether the progenitor binary formed through isolated stellar evolution or dynamical interactions in a dense environment.",
+      "expected": "insufficient_evidence",
+      "page": 8,
+      "location": "§VI",
+      "excerpt": "both in isolated binaries",
+      "rationale": "The report discusses both formation pathways. Detection of the merger does not identify which formed this particular system.",
+      "passage": "Binary black holes have been predicted to form both in isolated binaries [102–104] and in dense environments by dynamical interactions [105–107]."
+    }
+  ]
+}

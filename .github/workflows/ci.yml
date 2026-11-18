@@ -31,7 +31,8 @@ jobs:
         if: matrix.component == 'scifact-retriever'
         run: |
           docker compose up -d
-          curl --fail --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:6333/readyz
+          curl --fail --silent --show-error --max-time 2 \
+            --retry 15 --retry-all-errors --retry-delay 1 http://127.0.0.1:6333/readyz
           echo "SCIFACT_TEST_QDRANT_URL=http://127.0.0.1:6333" >> "$GITHUB_ENV"
       - run: uv run --locked pytest
       - name: Check frozen fact-check cases
