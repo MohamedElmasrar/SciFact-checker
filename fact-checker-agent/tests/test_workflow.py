@@ -196,3 +196,25 @@ async def test_decisive_abstract_skips_pdf_lookup():
     result = (await graph.ainvoke({"request": CLAIM.statement}))["report"].results[0]
     assert result.verdict == "supported"
     search_pdf.assert_not_awaited()
+
+
+@pytest.mark.parametrize("error", [RuntimeError("provider failure"), TimeoutError()])
+async def test_failed_pdf_assessment_preserves_first_result(error):
+    evidence = from_research({**PAPER, "identifiers": {"openalex": "W123"}}, rank=1)
+    page = evidence.model_copy(update={"page": 4})
+    abstract = AsyncMock(return_value=EvidenceBatch(evidence=[evidence], papers=[evidence.paper]))
+    search_pdf = AsyncMock(return_value=EvidenceBatch(evidence=[page]))
+    model = WorkflowModel("insufficient_evidence", "context")
+    preliminary = model.assessment.model_copy(update={"needs_full_text": True})
+    model.assess.side_effect = [preliminary, error]
+    graph = build_workflow(model, abstract, abstract, search_pdf=search_pdf)
+
+    result = (await graph.ainvoke({"request": CLAIM.statement}))["report"].results[0]
+
+    assert result.status == "completed"
+    assert result.verdict == "insufficient_evidence"
+    assert result.explanation == preliminary.explanation
+    assert result.citations[0].evidence.page is None
+    assert result.full_text_status == (
+        "timeout" if isinstance(error, TimeoutError) else "unavailable"
+    )
