@@ -27,11 +27,15 @@ class Evidence(BaseModel):
     paper: PaperReference
     passage: str
     provenance: list[Provenance]
+    page: int | None = Field(default=None, ge=1)
+    pdf_url: str | None = None
 
 
 class EvidenceBatch(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
     notices: list[str] = Field(default_factory=list)
+    status: Literal["completed", "timeout", "unavailable"] = "completed"
+    papers: list[PaperReference] = Field(default_factory=list)
 
 
 URL = TypeAdapter(HttpUrl)
@@ -89,10 +93,7 @@ def paper_url(identifiers: dict[str, str]) -> str | None:
     return None
 
 
-def from_research(paper: dict, rank: int) -> Evidence | None:
-    abstract = paper.get("abstract")
-    if not isinstance(abstract, str) or not abstract.strip():
-        return None
+def research_reference(paper: dict) -> PaperReference:
     identifiers = {key: value for key, value in paper.get("identifiers", {}).items() if value}
     if "doi" in identifiers:
         identifiers["doi"] = normalize_doi(identifiers["doi"])
@@ -101,14 +102,24 @@ def from_research(paper: dict, rank: int) -> Evidence | None:
         (url for source in providers.values() if (url := safe_url(source.get("url")))),
         None,
     )
+    return PaperReference(
+        title=paper["title"],
+        identifiers=identifiers,
+        authors=[author["name"] for author in paper.get("authors", [])],
+        year=paper.get("year"),
+        url=url,
+    )
+
+
+def from_research(
+    paper: dict, rank: int, *, reference: PaperReference | None = None
+) -> Evidence | None:
+    abstract = paper.get("abstract")
+    if not isinstance(abstract, str) or not abstract.strip():
+        return None
+    providers = paper.get("sources", {})
     return Evidence(
-        paper=PaperReference(
-            title=paper["title"],
-            identifiers=identifiers,
-            authors=[author["name"] for author in paper.get("authors", [])],
-            year=paper.get("year"),
-            url=url,
-        ),
+        paper=reference or research_reference(paper),
         passage=excerpt(abstract),
         provenance=[
             Provenance(
@@ -147,6 +158,7 @@ def rank_evidence(batches: list[EvidenceBatch], *, limit: int = 8) -> list[Evide
                 existing
                 for existing in unique
                 if same_paper(existing.paper, item.paper)
+                and (existing.pdf_url, existing.page) == (item.pdf_url, item.page)
                 and normalize_text(existing.passage) == normalize_text(item.passage)
             ),
             None,

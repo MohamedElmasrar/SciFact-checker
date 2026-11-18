@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("GOOGLE_API_KEY", "GEMINI_API_KEY")
     )
     gemini_model: str = "gemini-3.5-flash-lite"
+    fact_check_timeout_seconds: float = Field(default=90, gt=0, allow_inf_nan=False)
     gemini_timeout_seconds: int = Field(default=45, gt=0)
     research_mcp_transport: Literal["http", "stdio"] = "http"
     research_mcp_url: HttpUrl = HttpUrl("http://127.0.0.1:8000/mcp")

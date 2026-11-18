@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -24,6 +25,8 @@ const evidence = z.object({
   id: z.string(),
   paper,
   passage: z.string(),
+  page: z.number().int().positive().nullish(),
+  pdf_url: z.string().nullish(),
   provenance: z.array(z.object({ source: z.string() })),
 });
 const verdicts = {
@@ -36,16 +39,28 @@ const relations = {
   contradicts: "Contradicting evidence",
   context: "Context",
 };
+const executionStatuses = z.enum(["completed", "timeout", "unavailable"]);
+const failureLabels = {
+  timeout: "Verification timed out",
+  unavailable: "Verification unavailable",
+};
+
 const report = z.object({
+  status: executionStatuses.default("completed"),
   results: z.array(
     z.object({
       claim: z.object({ statement: z.string() }),
-      verdict: z.enum(["supported", "contradicted", "insufficient_evidence"]),
+      verdict: z
+        .enum(["supported", "contradicted", "insufficient_evidence"])
+        .nullable(),
+      status: executionStatuses.default("completed"),
+      notices: z.array(z.string()).default([]),
       explanation: z.string(),
       citations: z.array(
         z.object({
           evidence,
           relation: z.enum(["supports", "contradicts", "context"]),
+          quote: z.string().nullish(),
         }),
       ),
     }),
@@ -139,9 +154,11 @@ function PaperCitation({ reference }: { reference: z.infer<typeof paper> }) {
 function EvidencePassage({
   entry,
   relation,
+  quote,
 }: {
   entry: z.infer<typeof evidence>;
   relation?: keyof typeof relations;
+  quote?: string | null;
 }) {
   const providers = [
     ...new Set(
@@ -150,6 +167,9 @@ function EvidencePassage({
       ),
     ),
   ];
+  const pdfUrl = webUrl(entry.pdf_url);
+  const pdfPage = pdfUrl && entry.page ? new URL(pdfUrl) : undefined;
+  if (pdfPage) pdfPage.hash = `page=${entry.page}`;
   return (
     <details className="min-w-0">
       <summary className="cursor-pointer text-sm font-medium">
@@ -158,8 +178,18 @@ function EvidencePassage({
       <div className="flex flex-col gap-2 py-2 pl-4 text-sm break-words">
         <PaperCitation reference={entry.paper} />
         <blockquote className="text-muted-foreground border-l pl-3">
-          {entry.passage}
+          {quote ?? entry.passage}
         </blockquote>
+        {pdfPage && (
+          <a
+            href={pdfPage.href}
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            PDF page {entry.page}
+          </a>
+        )}
         <p className="text-muted-foreground text-xs">{providers.join(" · ")}</p>
       </div>
     </details>
@@ -181,10 +211,12 @@ export function ScientificResult({
   name,
   payload,
   fallback,
+  onRetryClaim,
 }: {
   name: string | undefined;
   payload: unknown;
   fallback: ReactNode;
+  onRetryClaim?: (claim: string) => void;
 }) {
   if (name === "fact_check") {
     const parsed = report.safeParse(payload);
@@ -194,6 +226,14 @@ export function ScientificResult({
         className="flex flex-col gap-3"
         aria-label="Fact-check report"
       >
+        {parsed.data.status !== "completed" && (
+          <p
+            role="status"
+            className="text-sm font-medium"
+          >
+            {failureLabels[parsed.data.status]}
+          </p>
+        )}
         {parsed.data.results.map((result, index) => (
           <Card key={index}>
             <CardHeader>
@@ -201,19 +241,35 @@ export function ScientificResult({
                 role="heading"
                 aria-level={3}
               >
-                {verdicts[result.verdict]}
+                {result.status !== "completed"
+                  ? failureLabels[result.status]
+                  : result.verdict && verdicts[result.verdict]}
               </CardTitle>
               <CardDescription>{result.claim.statement}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 break-words">
               <p className="text-sm">{result.explanation}</p>
-              {result.citations.map(({ evidence: entry, relation }) => (
+              {result.citations.map(({ evidence: entry, relation, quote }) => (
                 <EvidencePassage
                   key={entry.id}
                   entry={entry}
                   relation={relation}
+                  quote={quote}
                 />
               ))}
+              <Notices entries={result.notices} />
+              {result.status !== "completed" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  disabled={!onRetryClaim}
+                  onClick={() => onRetryClaim?.(result.claim.statement)}
+                >
+                  Retry this claim
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

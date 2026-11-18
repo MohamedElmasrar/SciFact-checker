@@ -106,6 +106,7 @@ async def test_fact_check_tool_returns_report_for_empty_decomposition():
     assert json.loads(result["messages"][-2].content) == {
         "results": [],
         "notices": ["No verifiable scientific claim was identified."],
+        "status": "completed",
     }
     retriever.ainvoke.assert_not_awaited()
 

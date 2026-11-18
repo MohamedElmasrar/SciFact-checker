@@ -32,6 +32,7 @@ const progressLabels = {
   research: "Looking up scientific literature…",
   retrieve_scifact: "Searching the SciFact corpus…",
   extract_claims: "Identifying verifiable claims…",
+  retrieve_full_text: "Checking full-text passages…",
   retrieve_evidence: "Gathering scientific evidence…",
   verify_claims: "Evaluating the evidence…",
   generate_report: "Preparing the fact-check report…",

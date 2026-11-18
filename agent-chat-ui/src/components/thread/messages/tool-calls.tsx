@@ -66,7 +66,13 @@ export function ToolCalls({
   );
 }
 
-export function ToolResult({ message }: { message: ToolMessage }) {
+export function ToolResult({
+  message,
+  onRetryClaim,
+}: {
+  message: ToolMessage;
+  onRetryClaim?: (claim: string) => void;
+}) {
   let parsedContent: any;
   let isJsonContent = false;
 
@@ -84,6 +90,7 @@ export function ToolResult({ message }: { message: ToolMessage }) {
     <ScientificResult
       name={message.name}
       payload={parsedContent}
+      onRetryClaim={onRetryClaim}
       fallback={
         <GenericToolResult
           message={message}

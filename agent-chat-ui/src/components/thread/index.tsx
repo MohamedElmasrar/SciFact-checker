@@ -218,18 +218,20 @@ export function Thread() {
     prevMessageLength.current = messages.length;
   }, [messages]);
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
-      return;
+  const submitMessage = (
+    text: string,
+    attachments: typeof contentBlocks = [],
+  ) => {
+    if ((text.trim().length === 0 && attachments.length === 0) || isLoading)
+      return false;
     setFirstTokenReceived(false);
 
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
       content: [
-        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
-        ...contentBlocks,
+        ...(text.trim().length > 0 ? [{ type: "text", text }] : []),
+        ...attachments,
       ] as Message["content"],
     };
 
@@ -256,9 +258,22 @@ export function Thread() {
       },
     );
 
-    setInput("");
-    setContentBlocks([]);
+    return true;
   };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (submitMessage(input, contentBlocks)) {
+      setInput("");
+      setContentBlocks([]);
+    }
+  };
+
+  const retryClaim = isLoading
+    ? undefined
+    : (claim: string) => {
+        submitMessage(`Fact-check this claim: ${claim}`);
+      };
 
   const handleRegenerate = (
     parentCheckpoint: Checkpoint | null | undefined,
@@ -436,6 +451,7 @@ export function Thread() {
                           message={message}
                           isLoading={isLoading}
                           handleRegenerate={handleRegenerate}
+                          onRetryClaim={retryClaim}
                         />
                       ),
                     )}
