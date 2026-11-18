@@ -51,14 +51,18 @@ class SciFactRetriever(BaseRetriever):
 
     def _search(self, claim: str) -> list[Document]:
         options = self.options
+        threshold = options.score_threshold
         limit = options.rerank_candidates if options.rerank else options.top_k
         depth = options.hybrid_depth if options.strategy == Strategy.HYBRID else limit
         hits = self.store.similarity_search_with_score(
             claim,
             k=depth,
             search_params=models.SearchParams(exact=options.exact_dense_search),
-            score_threshold=options.score_threshold,
+            score_threshold=threshold,
         )
+        # Embedded Qdrant can return RRF hits below the requested threshold.
+        if threshold is not None:
+            hits = [(hit, score) for hit, score in hits if score >= threshold]
         documents = []
         for hit, score in hits[:limit]:
             metadata = {

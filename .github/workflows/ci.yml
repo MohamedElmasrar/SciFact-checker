@@ -12,13 +12,9 @@ jobs:
   python:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        component: [fact-checker-agent, research-mcp-server, scifact-retriever]
     defaults:
       run:
-        working-directory: ${{ matrix.component }}
+        working-directory: fact-checker-agent
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -27,16 +23,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --locked
-      - name: Start Qdrant for retriever integration tests
-        if: matrix.component == 'scifact-retriever'
-        run: |
-          docker compose up -d
-          curl --fail --silent --show-error --max-time 2 \
-            --retry 15 --retry-all-errors --retry-delay 1 http://127.0.0.1:6333/readyz
-          echo "SCIFACT_TEST_QDRANT_URL=http://127.0.0.1:6333" >> "$GITHUB_ENV"
       - run: uv run --locked pytest
       - name: Check frozen fact-check cases
-        if: matrix.component == 'fact-checker-agent'
         run: uv run --locked python evals/run.py --check
 
   frontend:

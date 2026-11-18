@@ -31,13 +31,12 @@ class KeywordTestEmbeddings(Embeddings):
 
 
 @pytest.fixture
-def qdrant():
+def qdrant(tmp_path):
     url = os.environ.get("SCIFACT_TEST_QDRANT_URL")
-    if not url:
-        pytest.skip("Set SCIFACT_TEST_QDRANT_URL to run against a real Qdrant server")
     settings = Settings(
         _env_file=None,
         qdrant_url=url,
+        qdrant_path=tmp_path / "qdrant",
         qdrant_collection=f"scifact-test-{uuid4().hex}",
         qdrant_api_key=None,
         dense_model="test-keyword-embedding",

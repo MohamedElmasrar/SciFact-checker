@@ -8,7 +8,8 @@ from langchain_core.runnables import RunnableLambda
 from langchain_core.tools import tool
 
 from fact_checker.agent import build_agent
-from fact_checker.sources import ResearchSource, SciFactSource
+from fact_checker.config import Settings
+from fact_checker.sources import ResearchSource, SciFactSource, research_client
 
 
 class ScriptedChat(FakeMessagesListChatModel):
@@ -17,6 +18,27 @@ class ScriptedChat(FakeMessagesListChatModel):
 
     def with_structured_output(self, schema, **kwargs):
         return RunnableLambda(lambda _: schema(claims=[], has_more_claims=False))
+
+
+async def test_adapter_discovers_packaged_mcp_tools_over_stdio(monkeypatch):
+    monkeypatch.delenv("RESEARCH_MCP_TRANSPORT", raising=False)
+    settings = Settings(_env_file=None, google_api_key="test")
+    assert settings.research_mcp_transport == "stdio"
+    tools = await research_client(settings).get_tools(server_name="research")
+    by_name = {tool.name: tool for tool in tools}
+    assert {"search_papers", "search_paper_content"} <= by_name.keys()
+
+    # The server rejects this range before contacting a research provider.
+    result = await by_name["search_papers"].ainvoke(
+        {
+            "type": "tool_call",
+            "name": "search_papers",
+            "id": "stdio-test",
+            "args": {"query": "test", "year_from": 2020, "year_to": 2019},
+        }
+    )
+    assert result.status == "error"
+    assert "year_from" in str(result.content)
 
 
 def call(name, args):

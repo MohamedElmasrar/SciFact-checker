@@ -135,7 +135,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", default=3201, type=int)
     options = parser.parse_args()
-    project = Path(__file__).resolve().parents[1]
+    project = Path(__file__).resolve().parents[2]
     with (
         TemporaryDirectory(prefix="fact-checker-smoke-") as directory,
         closing(ThreadingHTTPServer(("127.0.0.1", 0), GeminiFixture)) as gemini,

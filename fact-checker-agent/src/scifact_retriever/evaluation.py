@@ -68,7 +68,7 @@ def benchmark_signature(settings: Settings) -> dict:
         "packages": {
             name: version(name)
             for name in (
-                "scifact-retriever",
+                "fact-checker-agent",
                 "datasets",
                 "fastembed",
                 "langchain-qdrant",

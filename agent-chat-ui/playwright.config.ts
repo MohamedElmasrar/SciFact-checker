@@ -10,7 +10,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "uv --directory ../fact-checker-agent run --locked python tests/serve_smoke.py",
+        "uv --directory ../fact-checker-agent run --locked python tests/fact_checker_tests/serve_smoke.py",
       url: `${agent}/ok`,
       timeout: 120_000,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
