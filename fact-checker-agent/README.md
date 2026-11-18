@@ -31,3 +31,23 @@ uv run --locked ruff check src tests evals
 The agent tests use deterministic models and tools. The retriever and research tests exercise the same Python distribution, using temporary indexes and provider fixtures.
 
 See the [verification evaluation guide](evals/README.md) for benchmark commands and scoring rules.
+
+## SciFact retriever benchmark
+
+The retriever benchmark compares dense search, BM25, hybrid RRF, and hybrid
+search with cross-encoder reranking. It selects a reranking depth against BEIR
+SciFact's train judgments and evaluates that depth on the held-out test split.
+Reports include Recall@5, Recall@10, MRR@10, nDCG@10, and p50/p95 query latency.
+
+Run from `fact-checker-agent` with an indexed SciFact collection. Stop the agent
+if it has the same embedded index open, or set `SCIFACT_QDRANT_PATH` to a separate
+copy of the index.
+
+```bash
+uv run --locked scifact-evaluate --split dev --candidate-depths 10 16 \
+  --output /tmp/scifact-retrieval-dev.json
+uv run --locked scifact-evaluate --split test --from-dev /tmp/scifact-retrieval-dev.json \
+  --output /tmp/scifact-retrieval-test.json
+```
+
+[Development report](benchmarks/scifact/dev.md) · [Held-out test report](benchmarks/scifact/test.md)

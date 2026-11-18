@@ -4,8 +4,9 @@ import logging
 from collections.abc import Iterable, Mapping
 from importlib.metadata import version
 from itertools import batched
-from math import log2
-from statistics import mean
+from math import ceil, log2
+from statistics import mean, median
+from time import perf_counter
 
 from langchain_qdrant import RetrievalMode
 from qdrant_client import QdrantClient
@@ -129,19 +130,28 @@ def evaluate(
         retrievers[strategy] = SciFactRetriever(store=store, options=options)
 
     baseline = {strategy.value: [] for strategy in Strategy}
+    timings = {strategy.value: [] for strategy in Strategy}
+    timings["hybrid_reranked"] = []
     reranked = {depth: [] for depth in depths}
     for number, (query_id, claim) in enumerate(sorted(data.queries.items()), 1):
         judgments = data.qrels[query_id]
         for strategy in (Strategy.DENSE, Strategy.SPARSE):
+            started = perf_counter()
             documents = retrievers[strategy].invoke(claim)
+            timings[strategy].append(perf_counter() - started)
             baseline[strategy].append(
                 ranking_metrics((doc.metadata["doc_id"] for doc in documents), judgments)
             )
+        started = perf_counter()
         hybrid = retrievers[Strategy.HYBRID].invoke(claim)
+        hybrid_time = perf_counter() - started
+        timings[Strategy.HYBRID].append(hybrid_time)
         hybrid_ids = [doc.metadata["doc_id"] for doc in hybrid]
         baseline[Strategy.HYBRID].append(ranking_metrics(hybrid_ids, judgments))
 
+        started = perf_counter()
         ranked_ids = [doc.metadata["doc_id"] for doc in reranker.rank(claim.strip(), hybrid)]
+        timings["hybrid_reranked"].append(hybrid_time + perf_counter() - started)
         for depth in depths:
             allowed = set(hybrid_ids[:depth])
             reranked[depth].append(
@@ -174,6 +184,14 @@ def evaluate(
             "hybrid_reranked": rerank_metrics[selected],
         },
         "rerank_depth_metrics": {str(depth): metrics for depth, metrics in rerank_metrics.items()},
+        "rerank_timed_candidates": depths[-1],
+        "latency_ms": {
+            name: {
+                "p50": 1000 * median(samples),
+                "p95": 1000 * sorted(samples)[ceil(len(samples) * 0.95) - 1],
+            }
+            for name, samples in timings.items()
+        },
     }
 
 
@@ -213,6 +231,20 @@ def markdown_report(report: dict) -> str:
         lines.append(
             f"| {labels[name]} | " + " | ".join(f"{scores[m]:.4f}" for m in METRICS) + " |"
         )
+    if timings := report.get("latency_ms"):
+        lines.extend(
+            [
+                "",
+                "Sequential retrieval latency excludes model loading and metric calculation. "
+                "Hybrid with reranking includes the hybrid search and cross-encoder scoring "
+                f"of up to {report['rerank_timed_candidates']} candidates.",
+                "",
+                "| Strategy | p50 (ms) | p95 (ms) |",
+                "|---|---:|---:|",
+            ]
+        )
+        for name, latency in timings.items():
+            lines.append(f"| {labels[name]} | {latency['p50']:.1f} | {latency['p95']:.1f} |")
     if len(report["rerank_depth_metrics"]) > 1:
         lines.extend(
             [
