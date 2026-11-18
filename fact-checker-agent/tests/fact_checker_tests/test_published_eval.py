@@ -17,7 +17,7 @@ from fact_checker.workflow import (
     VerificationResult,
 )
 
-runner = run_path(str(Path(__file__).resolve().parents[1] / "evals" / "run.py"))
+runner = run_path(str(Path(__file__).resolve().parents[2] / "evals" / "run.py"))
 
 
 def test_published_cases_are_split_by_paper_and_cover_all_verdicts():

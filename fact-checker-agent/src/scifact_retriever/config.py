@@ -1,6 +1,7 @@
 """Runtime settings and reproducible defaults."""
 
 from enum import StrEnum
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, SecretStr, model_validator
@@ -11,6 +12,7 @@ DEFAULT_DENSE_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 DEFAULT_RERANK_MODEL = "cross-encoder/ms-marco-TinyBERT-L2-v2"
 DEFAULT_RERANK_REVISION = "81d1926f67cb8eee2c2be17ca9f793c7c3bd20cc"
 SPARSE_MODEL = "Qdrant/bm25"
+DEFAULT_QDRANT_PATH = Path.home() / ".local" / "share" / "scifact-retriever" / "qdrant"
 
 
 class Strategy(StrEnum):
@@ -52,10 +54,15 @@ class SearchOptions(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="SCIFACT_", env_file=".env", env_nested_delimiter="__", extra="ignore"
+        env_prefix="SCIFACT_",
+        env_file=".env",
+        env_ignore_empty=True,
+        env_nested_delimiter="__",
+        extra="ignore",
     )
 
-    qdrant_url: HttpUrl = HttpUrl("http://127.0.0.1:6333")
+    qdrant_path: Path = DEFAULT_QDRANT_PATH
+    qdrant_url: HttpUrl | None = None
     qdrant_api_key: SecretStr | None = None
     qdrant_collection: str = Field(default="scifact", min_length=1)
     qdrant_timeout: int = Field(default=60, ge=1)

@@ -128,8 +128,13 @@ def ground_assessment(
         for bracket in re.findall(r"\[([^\[\]]+)\]", assessment.explanation)
         for evidence_id in re.findall(r"\bE\d+\b", bracket)
     }
-    if mentioned_ids - seen:
-        return rejected("The explanation referenced passages outside its citations.")
+    if mentioned_ids - by_id.keys():
+        return rejected("The explanation referenced passages that were not retrieved.")
+    citations.extend(
+        CitedEvidence(evidence=entry, relation="context")
+        for entry in evidence
+        if entry.id in mentioned_ids and entry.id not in seen
+    )
     required = {"supported": "supports", "contradicted": "contradicts"}.get(assessment.verdict)
     if assessment.needs_full_text and required:
         return rejected("The available passages did not resolve a material detail in the claim.")
@@ -204,9 +209,10 @@ async def assess_claim(assess, claim: Claim, evidence: list[Evidence]) -> Assess
                     "insufficient_evidence when the evidence is weak, indirect, or inconclusive. "
                     "Classify each cited ID as supports, contradicts, or context. For each "
                     "supporting or contradicting citation, copy a short exact quote from its "
-                    "passage that directly establishes the relation. Use only those IDs and cite "
-                    "them in square brackets in your plain-text explanation. Do not invent "
-                    "references. Set needs_full_text when a better passage could resolve a "
+                    "passage that directly establishes the relation. Include an evidence entry "
+                    "for every ID referenced in the explanation, including IDs used only as context. "
+                    "Cite these IDs in square brackets and use only IDs from the supplied passages. "
+                    "Set needs_full_text when a better passage could resolve a "
                     "material uncertainty about the verdict; otherwise set it to false."
                 )
             ),

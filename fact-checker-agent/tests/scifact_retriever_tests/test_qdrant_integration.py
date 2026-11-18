@@ -31,13 +31,12 @@ class KeywordTestEmbeddings(Embeddings):
 
 
 @pytest.fixture
-def qdrant():
+def qdrant(tmp_path):
     url = os.environ.get("SCIFACT_TEST_QDRANT_URL")
-    if not url:
-        pytest.skip("Set SCIFACT_TEST_QDRANT_URL to run against a real Qdrant server")
     settings = Settings(
         _env_file=None,
         qdrant_url=url,
+        qdrant_path=tmp_path / "qdrant",
         qdrant_collection=f"scifact-test-{uuid4().hex}",
         qdrant_api_key=None,
         dense_model="test-keyword-embedding",
@@ -154,4 +153,7 @@ def test_retrieval_and_benchmark_against_qdrant(qdrant, papers, monkeypatch):
         ("dense", "sparse", "hybrid", "hybrid_reranked"), dict.fromkeys(METRICS, 1.0)
     )
     assert report["selected_rerank_candidates"] == 10
+    assert report["rerank_timed_candidates"] == 16
+    assert report["latency_ms"].keys() == report["metrics"].keys()
+    assert all(0 <= row["p50"] <= row["p95"] for row in report["latency_ms"].values())
     assert "Hybrid + cross-encoder" in markdown_report(report)

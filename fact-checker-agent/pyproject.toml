@@ -4,26 +4,50 @@ version = "0.1.0"
 description = "Scientific research and claim verification with Gemini and LangGraph"
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "arxiv>=2.4,<2.5",
+    "cachetools>=6,<8",
+    "datasets>=4.4,<5",
+    "fastembed>=0.7,<0.8",
+    "fastmcp>=3,<4",
+    "httpx>=0.28,<1",
     "langchain>=1.2,<2",
+    "langchain-core>=1.2,<2",
     "langchain-google-genai>=4,<5",
+    "langchain-huggingface>=1.2,<2",
     "langchain-mcp-adapters>=0.2,<1",
+    "langchain-qdrant>=1.1,<2",
     "langgraph>=1.0,<2",
+    "mcp>=1.20,<2",
+    "pyalex>=0.21,<0.22",
+    "pydantic>=2.11,<3",
     "pydantic-settings>=2.12,<3",
-    "scifact-retriever",
+    "pymupdf>=1.26,<2",
+    "pymupdf4llm>=0.2,<2",
+    "qdrant-client>=1.16,<1.17",
+    "requests>=2.32,<3",
+    "semanticscholar>=0.12,<0.13",
+    "sentence-transformers>=5.2,<6",
+    "tenacity>=9,<10",
+    "torch>=2.8,<2.11",
+    "transformers>=4.51,<5",
 ]
+
+[project.scripts]
+research-mcp = "research_mcp.server:main"
+scifact-ingest = "scifact_retriever.cli:ingest_main"
+scifact-evaluate = "scifact_retriever.cli:evaluate_main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/fact_checker"]
+packages = ["src/fact_checker", "src/research_mcp", "src/scifact_retriever"]
 
 [dependency-groups]
 dev = ["langgraph-cli[inmem]>=0.4,<1", "pytest>=9,<10", "pytest-asyncio>=1,<2", "ruff>=0.15,<1"]
 
 [tool.uv.sources]
-scifact-retriever = { path = "../scifact-retriever", editable = true }
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" }]
 
 [[tool.uv.index]]
@@ -35,6 +59,7 @@ explicit = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+markers = ["integration: exercises Qdrant and embedding adapters"]
 
 [tool.ruff]
 line-length = 100

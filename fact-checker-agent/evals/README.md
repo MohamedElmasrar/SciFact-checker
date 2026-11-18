@@ -64,9 +64,9 @@ related text that leaves the original claim unresolved.
 
 ### End-to-end assessment
 
-Start the indexed SciFact Qdrant collection and the research MCP server using the
-[workspace setup guide](../../README.md#run-locally). Run this command from
-`fact-checker-agent`.
+Index SciFact using the [workspace setup guide](../../README.md#run-locally).
+Run this command from `fact-checker-agent`. Stop the dev server if it is
+using the same local index.
 
 ```bash
 GEMINI_MODEL=gemini-3.1-flash-lite uv run --locked python evals/run.py \

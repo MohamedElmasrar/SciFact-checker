@@ -4,7 +4,7 @@ The existing Agent Chat UI streams conversations from the `fact_checker` LangGra
 
 ## Run locally
 
-Follow the [repository setup guide](../README.md#run-locally) to start Qdrant, the research MCP server, this agent, and the chat UI. The agent's `.env.example` lists the Gemini model, service addresses, timeouts, and retrieval settings. Use `GEMINI_MODEL` to choose a model and `SCIFACT_SEARCH__RERANK` to enable the retriever's optional reranking.
+Follow the [repository setup guide](../README.md#run-locally) to index SciFact and start the agent with `langgraph dev`. The agent opens the local index and launches the packaged research server through the LangChain MCP adapter over stdio. The agent's `.env.example` lists the Gemini model, service addresses, timeouts, and retrieval settings. Use `GEMINI_MODEL` to choose a model and `SCIFACT_SEARCH__RERANK` to enable the retriever's optional reranking.
 
 ## Try a conversation
 
@@ -28,6 +28,26 @@ uv run --locked pytest
 uv run --locked ruff check src tests evals
 ```
 
-Unit and graph integration tests use deterministic model and tool doubles. They run without a Gemini key, Qdrant, or network access.
+The agent tests use deterministic models and tools. The retriever and research tests exercise the same Python distribution, using temporary indexes and provider fixtures.
 
-See the [verification evaluation](evals/README.md) for fixture results and the opt-in live Gemini command.
+See the [verification evaluation guide](evals/README.md) for benchmark commands and scoring rules.
+
+## SciFact retriever benchmark
+
+The retriever benchmark compares dense search, BM25, hybrid RRF, and hybrid
+search with cross-encoder reranking. It selects a reranking depth against BEIR
+SciFact's train judgments and evaluates that depth on the held-out test split.
+Reports include Recall@5, Recall@10, MRR@10, nDCG@10, and p50/p95 query latency.
+
+Run from `fact-checker-agent` with an indexed SciFact collection. Stop the agent
+if it has the same embedded index open, or set `SCIFACT_QDRANT_PATH` to a separate
+copy of the index.
+
+```bash
+uv run --locked scifact-evaluate --split dev --candidate-depths 10 16 \
+  --output /tmp/scifact-retrieval-dev.json
+uv run --locked scifact-evaluate --split test --from-dev /tmp/scifact-retrieval-dev.json \
+  --output /tmp/scifact-retrieval-test.json
+```
+
+[Development report](benchmarks/scifact/dev.md) · [Held-out test report](benchmarks/scifact/test.md)

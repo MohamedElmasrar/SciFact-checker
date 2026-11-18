@@ -5,58 +5,70 @@ A research chatbot that searches scientific literature and verifies claims again
 | Component | Role |
 | --- | --- |
 | [Agent Chat UI](agent-chat-ui/README.md) | Fork of LangChain's chat frontend with streamed research progress, paper references, and fact-check reports |
-| [Fact Checker Agent](fact-checker-agent/README.md) | Gemini conversational agent and claim-verification graph |
-| [Research MCP Server](research-mcp-server/README.md) | Paper search, citation exploration, and PDF passages from scientific literature |
-| [SciFact Retriever](scifact-retriever/README.md) | Dense and BM25 retrieval over BEIR SciFact, with optional reranking |
+| [Fact Checker Agent](fact-checker-agent/README.md) | Gemini agent and LangGraph claim-verification workflow |
+| [Research MCP](fact-checker-agent/src/research_mcp) | Paper search, citation exploration, and PDF passages from OpenAlex, arXiv, and Semantic Scholar |
+| [SciFact retriever](fact-checker-agent/src/scifact_retriever) | Dense and BM25 search over the BEIR SciFact corpus, stored in embedded Qdrant |
+
+The three Python modules share one package and lockfile in `fact-checker-agent`.
+LangGraph starts the research server on demand over stdio through the LangChain
+MCP adapter. The agent opens the file-backed Qdrant index in its own process.
 
 ## Run locally
 
-You need Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 20.19 or later, pnpm, Docker with Compose, and a Gemini API key. Start each step from the repository root in a separate terminal. Keep any existing local environment files when configuring a component.
+Use Python 3.12, [uv](https://docs.astral.sh/uv/), and a Gemini API key. From
+the repository root, set up the agent once.
 
-1. Start Qdrant. Once the readiness check succeeds, index SciFact. If you already have an indexed collection, point the agent at it and skip this step.
+```bash
+cd fact-checker-agent
+test -f .env || cp .env.example .env
+uv sync --locked
+```
 
-   ```bash
-   cd scifact-retriever
-   docker compose up -d
-   curl --fail http://127.0.0.1:6333/readyz
-   uv run --locked scifact-ingest
-   ```
+Set `GOOGLE_API_KEY` or `GEMINI_API_KEY` in `.env`. You can add optional
+`RESEARCH_OPENALEX_API_KEY` and `RESEARCH_SEMANTICSCHOLAR_API_KEY` settings
+in the same file.
 
-   The first import downloads the pinned SciFact corpus and embedding models. If you customize the collection or model, use the same settings in the retriever and agent.
+Build the local SciFact index once if you do not already have it. The first
+import downloads the pinned corpus and embedding models. Qdrant stores the
+index under `~/.local/share/scifact-retriever/qdrant` by default. Stop the
+agent before opening the same file-backed index from another process.
 
-2. Start the research MCP server at `http://127.0.0.1:8000/mcp`.
+```bash
+uv run --locked scifact-ingest
+```
 
-   ```bash
-   cd research-mcp-server
-   uv run --locked research-mcp --transport http
-   ```
+Start the agent from `fact-checker-agent`.
 
-   OpenAlex and Semantic Scholar credentials are optional. Set them in the research server's own `.env` using its `.env.example`. To use stdio instead, set `RESEARCH_MCP_TRANSPORT=stdio` in the agent's `.env` and skip the HTTP server command.
+```bash
+uv run --locked langgraph dev
+```
 
-3. In `fact-checker-agent`, copy `.env.example` to `.env` if necessary and set `GOOGLE_API_KEY` or `GEMINI_API_KEY`. Start the graph server.
+LangGraph serves the `fact_checker` assistant at `http://localhost:2024`.
 
-   ```bash
-   cd fact-checker-agent
-   uv sync --locked
-   uv run langgraph dev
-   ```
+To use the chat UI, run these commands from the repository root in another
+terminal. The UI requires Node.js 20.19 or later and pnpm.
 
-   LangGraph serves the `fact_checker` assistant at `http://localhost:2024`.
+```bash
+cd agent-chat-ui
+test -f .env.local || cp .env.example .env.local
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
-4. Start the frontend. Copy the example configuration only if `.env.local` does not already exist.
+Open the chat and try one of these prompts. [Local chat](http://localhost:3000)
 
-   ```bash
-   cd agent-chat-ui
-   test -f .env.local || cp .env.example .env.local
-   pnpm install --frozen-lockfile
-   pnpm dev
-   ```
-
-   Open [the local chat](http://localhost:3000) and try “Find three papers about the transformer attention mechanism” or “Fact-check whether the original Transformer uses positional encodings.”
+- **Paper search** — Find three papers about the Transformer attention mechanism.
+- **Local SciFact retrieval** — Use `retrieve_scifact` to find evidence for the
+  claim that aspirin inhibits platelet aggregation. Quote a relevant passage and
+  cite its source.
+- **Fact-check** — Verify whether the original Transformer used recurrence or
+  convolution. Cite the passages that support the verdict.
 
 ## Checks
 
-Run `uv run --locked pytest` from each Python component directory. To include the SciFact integration tests, set `SCIFACT_TEST_QDRANT_URL=http://127.0.0.1:6333` with Qdrant running. From `agent-chat-ui`, run `pnpm lint` and `pnpm build` after installing dependencies.
+Run `uv run --locked pytest` from `fact-checker-agent` to test all three
+Python modules. The retriever integration tests use a temporary on-disk index.
+From `agent-chat-ui`, run `pnpm lint` and `pnpm build` after installing dependencies.
 
 The [CI workflow](.github/workflows/ci.yml) also runs the [frozen verification evaluation](fact-checker-agent/evals/README.md) and a Playwright test against LangGraph with local Gemini and research fixtures. To run the browser test locally, install Chromium with `pnpm exec playwright install chromium` and run `pnpm exec playwright test` from `agent-chat-ui`.
 

@@ -99,6 +99,25 @@ def test_explanation_cannot_reference_an_uncited_passage(markers):
     assert "E99" not in checked.explanation
 
 
+@pytest.mark.parametrize("verdict", ["insufficient_evidence", "supported"])
+def test_retrieved_passage_mentioned_only_in_explanation_is_context(verdict):
+    entry = from_research(PAPER, rank=1).model_copy(update={"id": "E1"})
+    assessment = Assessment(
+        verdict=verdict,
+        explanation="The retrieved comparison [E1] provides background.",
+        evidence=[],
+    )
+
+    result = ground_assessment(CLAIM, [entry], assessment)
+
+    assert result.verdict == "insufficient_evidence"
+    assert result.grounding_rejected == (verdict == "supported")
+    [citation] = result.citations
+    assert citation.evidence == entry
+    assert citation.relation == "context"
+    assert citation.quote is None
+
+
 @pytest.mark.parametrize("quote", [None, "A sentence absent from the source."])
 def test_decisive_citations_require_a_source_quote(quote):
     entry = from_research(PAPER, rank=1).model_copy(update={"id": "E1"})

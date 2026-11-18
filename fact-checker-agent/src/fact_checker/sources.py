@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+import os
+import sys
 import time
 from collections.abc import Callable
 from threading import Lock
@@ -29,9 +31,10 @@ log = logging.getLogger(__name__)
 
 
 def load_scifact() -> BaseRetriever:
+    from torch import set_num_threads
+
     from scifact_retriever import Settings as SciFactSettings
     from scifact_retriever import build_retriever
-    from torch import set_num_threads
 
     settings = SciFactSettings()
     set_num_threads(settings.torch_threads)
@@ -94,14 +97,9 @@ def research_client(settings: Settings) -> MultiServerMCPClient:
     if settings.research_mcp_transport == "stdio":
         connection = {
             "transport": "stdio",
-            "command": "uv",
-            "args": [
-                "--directory",
-                str(settings.research_mcp_directory.resolve()),
-                "run",
-                "--locked",
-                "research-mcp",
-            ],
+            "command": sys.executable,
+            "args": ["-m", "research_mcp.server"],
+            "env": {key: value for key, value in os.environ.items() if key.startswith("RESEARCH_")},
         }
     else:
         connection = {"transport": "streamable_http", "url": str(settings.research_mcp_url)}

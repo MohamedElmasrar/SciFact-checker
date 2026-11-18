@@ -28,6 +28,12 @@ class IndexResult:
 
 
 def make_client(settings: Settings) -> QdrantClient:
+    if settings.qdrant_url is None:
+        # The retriever serializes search, including work dispatched by ainvoke.
+        return QdrantClient(
+            path=str(settings.qdrant_path.expanduser().resolve()),
+            force_disable_check_same_thread=True,
+        )
     return QdrantClient(
         url=str(settings.qdrant_url),
         api_key=settings.qdrant_api_key.get_secret_value() if settings.qdrant_api_key else None,
@@ -92,6 +98,8 @@ def validate_collection(
     client: QdrantClient, settings: Settings, *, require_ready: bool = True
 ) -> int | None:
     name = settings.qdrant_collection
+    if not client.collection_exists(name):
+        raise ValueError(f"Collection {name!r} is missing. Run scifact-ingest.")
     try:
         info = client.get_collection(name)
     except UnexpectedResponse as exc:
