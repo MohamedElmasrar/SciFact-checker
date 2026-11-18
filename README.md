@@ -58,4 +58,6 @@ You need Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 20.19 or later, 
 
 Run `uv run --locked pytest` from each Python component directory. To include the SciFact integration tests, set `SCIFACT_TEST_QDRANT_URL=http://127.0.0.1:6333` with Qdrant running. From `agent-chat-ui`, run `pnpm lint` and `pnpm build` after installing dependencies.
 
+The [CI workflow](.github/workflows/ci.yml) also runs the [frozen verification evaluation](fact-checker-agent/evals/README.md) and a Playwright test against LangGraph with local Gemini and research fixtures. To run the browser test locally, install Chromium with `pnpm exec playwright install chromium` and run `pnpm exec playwright test` from `agent-chat-ui`.
+
 Commit the `.env.example` templates and dependency lockfiles. Put keys in local environment files, which Git ignores.
